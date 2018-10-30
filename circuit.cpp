@@ -639,7 +639,7 @@ void gateLevelCkt::applyVector(char *vec) {
     char origBit;
     int successor;
     int i, j;
-    xlevelMAX = 0;
+    xlevelMAX = 1;
 
     for (i = 0; i < numpri; i++) {
         origVal1 = value1[inputs[i]] & 1;
@@ -652,7 +652,7 @@ void gateLevelCkt::applyVector(char *vec) {
             origBit = 'x';
         }
 
-        if ((origBit != vec[i]) || (origBit != 'x') || (vec[i] != 'X')) {
+        if ((origBit != vec[i]) || (origBit == 'x') || (vec[i] == 'X')) {
             switch (vec[i]) {
             case '0':
                 value1[inputs[i]] = 0;
