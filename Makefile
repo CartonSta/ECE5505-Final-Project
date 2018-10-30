@@ -1,6 +1,6 @@
 CC = g++
 SRC := circuit.cpp
-BIN = project1
+BIN = final-project
 
 .PHONY: clean
 

@@ -197,9 +197,9 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
     while (moreVec) {
         moreVec = getVector(vecFile, vecWidth);
         if (moreVec == 1) {
-            cout << "vector #" << vecNum << ": " << vector << "\n";
             circuit->applyVector(vector);
             circuit->goodsim();      // simulate the vector
+            cout << "vector #" << vecNum << "\n";
             if (OBSERVE) {
                 circuit->observeOutputs();
             }
@@ -434,7 +434,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
             // assign all values to unknown
             value1[netnum] = 0;
             value2[netnum] = ALLONES;
-            xlevel[netnum] = xlevelMAX++;
+            xlevel[netnum] = 0;
         }
 
         // read in and discard the observability values
@@ -639,6 +639,7 @@ void gateLevelCkt::applyVector(char *vec) {
     char origBit;
     int successor;
     int i, j;
+    xlevelMAX = 0;
 
     for (i = 0; i < numpri; i++) {
         origVal1 = value1[inputs[i]] & 1;
@@ -651,7 +652,7 @@ void gateLevelCkt::applyVector(char *vec) {
             origBit = 'x';
         }
 
-        if ((origBit != vec[i]) && ((origBit != 'x') || (vec[i] != 'X'))) {
+        if ((origBit != vec[i]) || (origBit != 'x') || (vec[i] != 'X')) {
             switch (vec[i]) {
             case '0':
                 value1[inputs[i]] = 0;
@@ -766,7 +767,7 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert) {
+                if (invert && (temp_xlevel != xlevelMAX + 1)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -794,7 +795,7 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert) {
+                if (invert && (temp_xlevel != xlevelMAX + 1)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -843,7 +844,7 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert) {
+                if (invert && (temp_xlevel != xlevelMAX + 1)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -872,7 +873,7 @@ void gateLevelCkt::goodsim() {
             if (val1 == val2) {
                 xlevel[gateN] = 0;
                 if (numXs > 1) {
-                    cout << "Xs on inputs of gate " << gateN << " squashed!\n";
+                    cout << "X's on inputs of gate " << gateN << " squashed!\n";
                 }
             } else {
                 xlevel[gateN] = temp_xlevel;
