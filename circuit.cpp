@@ -668,7 +668,7 @@ void gateLevelCkt::applyVector(char *vec) {
             case 'X':
                 value1[inputs[i]] = 0;
                 value2[inputs[i]] = ALLONES;
-                xlevel[inputs[i]] = xlevelMAX++;
+                xlevel[inputs[i]] = ++xlevelMAX;
                 break;
             default:
                 cerr << vec[i] << ": error in the input vector.\n";
@@ -756,7 +756,7 @@ void gateLevelCkt::goodsim() {
                         numXs = 0;
                         break;
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
-                        temp_xlevel = xlevelMAX++;
+                        temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
                         break;
@@ -767,7 +767,7 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX + 1)) {
+                if (invert && (temp_xlevel != xlevelMAX)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -784,7 +784,7 @@ void gateLevelCkt::goodsim() {
                         numXs = 0;
                         break;
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
-                        temp_xlevel = xlevelMAX++;
+                        temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
                         break;
@@ -795,7 +795,7 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX + 1)) {
+                if (invert && (temp_xlevel != xlevelMAX)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -824,27 +824,29 @@ void gateLevelCkt::goodsim() {
                 invert = true;
             case T_xor:
                 predList = inlist[gateN];
-                val1 = value1[predList[0]];
-                val2 = value2[predList[0]];
+                val1 = 0;
+                val2 = 0;
 
-                for(i=1;i<fanin[gateN];i++) {
+                for(i=0;i<fanin[gateN];i++) {
                     predecessor = predList[i];
                     if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
-                        temp_xlevel = xlevelMAX++;
+                        temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
                         break;
                     } else {
-                        tmpVal = ALLONES^(((    ALLONES^value1[predecessor]) &
-                                (ALLONES^val1)) | (value2[predecessor]&val2));
-                        val2 = ((ALLONES^value1[predecessor]) & val2) |
-                                (value2[predecessor] & (ALLONES^val1));
-                        val1 = tmpVal;
+                        // tmpVal = ALLONES^(((    ALLONES^value1[predecessor]) &
+                        //         (ALLONES^val1)) | (value2[predecessor]&val2));
+                        // val2 = ((ALLONES^value1[predecessor]) & val2) |
+                        //         (value2[predecessor] & (ALLONES^val1));
+                        // val1 = tmpVal;
+                        val1 ^= value1[predecessor];
+                        val2 ^= value2[predecessor];
                         numXs += xlevel[predecessor] ? 1 : 0;
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX + 1)) {
+                if (invert && (temp_xlevel != xlevelMAX)) {
                     val1 = ~val1;
                     val2 = ~val2;
                 }
@@ -859,7 +861,7 @@ void gateLevelCkt::goodsim() {
             case T_tie0:
             case T_tie1:
             case T_tieX:
-                temp_xlevel = xlevelMAX++;
+                temp_xlevel = ++xlevelMAX;
             case T_tieZ:
                 val1 = value1[gateN];
                 val2 = value2[gateN];
