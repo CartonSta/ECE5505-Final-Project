@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cstring>
 #include <ctime>
 using namespace std;
 
@@ -113,6 +114,7 @@ class gateLevelCkt {
     unsigned int *value2;   // value of gate
     unsigned int *xlevel;   // level of x
     unsigned int xlevelMAX;
+    short **xchain;  // chain of xs for output - 0 is ignore, 1 is Xn, 2 is ~Xn
     int **predOfSuccInput;      // predecessor of successor input-pin list
     int **succOfPredOutput;     // successor of predecessor output-pin list
 
@@ -154,7 +156,7 @@ public:
 
 char vector[5120];
 gateLevelCkt *circuit;
-int OBSERVE, INIT0;
+int OBSERVE, XCHAIN;
 int vecNum=0;
 int numTieNodes;
 int TIES[512];
@@ -197,9 +199,9 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
     while (moreVec) {
         moreVec = getVector(vecFile, vecWidth);
         if (moreVec == 1) {
+            cout << "vector #" << vecNum << ":\n";
             circuit->applyVector(vector);
             circuit->goodsim();      // simulate the vector
-            cout << "vector #" << vecNum << "\n";
             if (OBSERVE) {
                 circuit->observeOutputs();
             }
@@ -235,19 +237,21 @@ main(int argc, char *argv[]) {
     if (argc == 3) {
         i = 1;
         nameIndex = 2;
+        OBSERVE = 0;
+        XCHAIN = 0;
         while (argv[1][i] != EOS) {
             switch (argv[1][i]) {
             case 'o':
                 OBSERVE = 1;
                 break;
-            case 'i':
-                INIT0 = 1;
+            case 'x':
+                XCHAIN = 1;
                 break;
             default:
                 cerr << "Invalid option: " << argv[1] << "\n";
-                cerr << "Usage: " << argv[0] << " [-io] <ckt> <type>\n";
-                cerr << "The -i option is to begin the circuit in a state in *.initState.\n";
-                cerr << "and o option is to OBSERVE fault-free outputs.\n";
+                cerr << "Usage: " << argv[0] << " [-xo] <ckt>\n";
+                cerr << "The -x option is to view the X chain for each X output.\n";
+                cerr << "and -o option is to OBSERVE fault-free outputs.\n";
                 exit(-1);
                 break;
             }   // switch
@@ -256,7 +260,7 @@ main(int argc, char *argv[]) {
     } else {   // no option
         nameIndex = 1;
         OBSERVE = 0;
-        INIT0 = 0;
+        XCHAIN = 0;
     }
 
     cktName = argv[nameIndex];
@@ -295,6 +299,10 @@ inline void gateLevelCkt::insertEvent(int levelN, int gateN) {
 // gateLevelCkt class
 ////////////////////////////////////////////////////////////////////////
 
+#define X_CHAIN_NA  0x0
+#define X_CHAIN_ON  0x1
+#define X_CHAIN_OFF 0x2
+
 // constructor: reads in the *.lev file for the gate-level ckt
 gateLevelCkt::gateLevelCkt(string cktName) {
     ifstream yyin;
@@ -329,6 +337,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
     po = new unsigned[count+64];
     inlist = new int * [count+64];
     fnlist = new int * [count+64];
+    xchain = new short * [count+64];
     sched = new char[count+64];
     value1 = new unsigned int[count+64];
     value2 = new unsigned int[count+64];
@@ -482,34 +491,10 @@ gateLevelCkt::gateLevelCkt(string cktName) {
     setupWheel(maxlevels, maxLevelSize);
     setFaninoutMatrix();
 
-    if (INIT0) { // if start from a initial state
-    
-        RESET_FF1 = new unsigned int [numff+2];
-        RESET_FF2 = new unsigned int [numff+2];
-
-        fName = cktName + ".initState";
-        yyin.open(fName.c_str(), ios::in);
-        if (yyin == NULL) {   
-            cerr << "Can't open " << fName << "\n";
-            exit(-1);
+    if (XCHAIN) {
+        for (i=0; i < numgates+64; i++) {
+            xchain[i] = new short[numgates+64]();
         }
-
-        for (i=0; i<numff; i++) {
-            yyin >>  c;
-
-            if (c == '0') {
-                RESET_FF1[i] = 0;
-                RESET_FF2[i] = 0;
-            } else if (c == '1') {
-                RESET_FF1[i] = ALLONES;
-                RESET_FF2[i] = ALLONES;
-            } else {
-                RESET_FF1[i] = 0;
-                RESET_FF2[i] = ALLONES;
-            }
-        }
-
-        yyin.close();
     }
 }
 
@@ -600,33 +585,6 @@ void gateLevelCkt::setTieEvents() {
             }
         }
     }   // for (i...)
-
-    // initialize state if necessary
-    if (INIT0 == 1) {
-        cout << "Initialize circuit to values in *.initState!\n";
-        for (i=0; i<numff; i++) {
-            value1[ff_list[i]] = value2[ff_list[i]] = RESET_FF1[i];
-
-            for (j=0; j<fanout[ff_list[i]]; j++) {
-                successor = fnlist[ff_list[i]][j];
-                if (sched[successor] == 0) {
-                    insertEvent(levelNum[successor], successor);
-                    sched[successor] = 1;
-                }
-            } // for j
-
-            predecessor = inlist[ff_list[i]][0];
-            value1[predecessor] = value2[predecessor] = RESET_FF1[i];
-
-            for (j=0; j<fanout[predecessor]; j++) {
-                successor = fnlist[predecessor][j];
-                if (sched[successor] == 0) {
-                    insertEvent(levelNum[successor], successor);
-                    sched[successor] = 1;
-                }
-            } // for j
-        }   // for i
-    }   // if (INIT0)
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -639,7 +597,13 @@ void gateLevelCkt::applyVector(char *vec) {
     char origBit;
     int successor;
     int i, j;
-    xlevelMAX = 1;
+    xlevelMAX = 0;
+
+    if (XCHAIN) {
+        for (i=0; i < numgates+64; i++) {
+            memset(xchain[i], X_CHAIN_NA, sizeof(*xchain[i]) * (numgates+64));
+        }
+    }
 
     for (i = 0; i < numpri; i++) {
         origVal1 = value1[inputs[i]] & 1;
@@ -669,6 +633,9 @@ void gateLevelCkt::applyVector(char *vec) {
                 value1[inputs[i]] = 0;
                 value2[inputs[i]] = ALLONES;
                 xlevel[inputs[i]] = ++xlevelMAX;
+                if (XCHAIN) {
+                    xchain[inputs[i]][xlevelMAX] |= X_CHAIN_ON;
+                }
                 break;
             default:
                 cerr << vec[i] << ": error in the input vector.\n";
@@ -729,7 +696,6 @@ void gateLevelCkt::goodsim() {
     int sucLevel;
     int gateN, predecessor, successor;
     int *predList;
-    int i;
     unsigned int temp_xlevel;
     unsigned int numXs;
     unsigned int val1, val2, tmpVal;
@@ -743,23 +709,32 @@ void gateLevelCkt::goodsim() {
             temp_xlevel = 0;
             numXs = 0;
             bool invert = false;
+            bool newX = false;
             switch (gtype[gateN]) {
             case T_nand:
                 invert = true;
             case T_and:
                 val1 = val2 = ALLONES;
                 predList = inlist[gateN];
-                for (i=0; i<fanin[gateN]; i++) {
+                for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
+                    if (XCHAIN && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
+                        for (int j = 0; j <= predecessor; j++) {
+                            xchain[gateN][j] |= xchain[predecessor][j];
+                        }
+                    }
                     if (value1[predecessor] == 0 && value2[predecessor] == 0) { /* controlling values are not considered squashed */
                         val1 = val2 = 0;
                         numXs = 0;
+                        newX = false;
                         break;
+                    } else if (newX) { /* Xs are combined, only a controlling value can change this now */
+                        continue;
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
-                        break;
+                        newX = true;
                     } else {
                         val1 &= value1[predecessor];
                         val2 &= value2[predecessor];
@@ -767,9 +742,16 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX)) {
+                if (invert && !newX) {
                     val1 = ~val1;
                     val2 = ~val2;
+                    if (XCHAIN) {
+                        /* set new X value */
+                        xchain[gateN][temp_xlevel] |= X_CHAIN_OFF;
+                    }
+                }
+                if (XCHAIN && newX) { /* add new X value */
+                    xchain[gateN][temp_xlevel] |= X_CHAIN_ON;
                 }
                 break;
             case T_nor:
@@ -777,17 +759,25 @@ void gateLevelCkt::goodsim() {
             case T_or:
                 val1 = val2 = 0;
                 predList = inlist[gateN];
-                for (i=0; i<fanin[gateN]; i++) {
+                for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
+                    if (XCHAIN && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
+                        for (int j = 0; j <= predecessor; j++) {
+                            xchain[gateN][j] |= xchain[predecessor][j];
+                        }
+                    }
                     if (value1[predecessor] == ALLONES && value2[predecessor] == ALLONES) { /* controlling values are not considered squashed */
                         val1 = val2 = ALLONES;
                         numXs = 0;
+                        newX = false;
                         break;
+                    } else if (newX) { /* Xs are combined, only a controlling value can change this now */
+                        continue;
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
-                        break;
+                        newX = true;
                     } else {
                         val1 |= value1[predecessor];
                         val2 |= value2[predecessor];
@@ -795,9 +785,16 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX)) {
+                if (invert && !newX) {
                     val1 = ~val1;
                     val2 = ~val2;
+                    if (XCHAIN) {
+                        /* set new X value */
+                        xchain[gateN][temp_xlevel] |= X_CHAIN_OFF;
+                    }
+                }
+                if (XCHAIN && newX) { /* add new X value */
+                    xchain[gateN][temp_xlevel] |= X_CHAIN_ON;
                 }
                 break;
             case T_not:
@@ -805,12 +802,27 @@ void gateLevelCkt::goodsim() {
                 val1 = ~value1[predecessor];
                 val2 = ~value2[predecessor];
                 temp_xlevel = xlevel[predecessor];
+                if (XCHAIN && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
+                    for (int i = 0; i <= predecessor; i++) {
+                        xchain[gateN][i] |= xchain[predecessor][i];
+                    }
+                }
+                if (XCHAIN) {
+                    /* set new X value */
+                    xchain[gateN][temp_xlevel] |= X_CHAIN_OFF;
+                }
                 break;
             case T_buf:
                 predecessor = inlist[gateN][0];
                 val1 = value1[predecessor];
                 val2 = value2[predecessor];
                 temp_xlevel = xlevel[predecessor];
+                /* Add predecessor's chain to the chain */
+                if (XCHAIN && (value1[predecessor] != value2[predecessor])) { 
+                    for (int j = 0; j <= predecessor; j++) {
+                        xchain[gateN][j] |= xchain[predecessor][j];
+                    }
+                }
                 break;
             case T_dff:
                 predecessor = inlist[gateN][0];
@@ -819,6 +831,12 @@ void gateLevelCkt::goodsim() {
                 temp_xlevel = xlevel[predecessor];
                 actFFList[actFFLen] = gateN;
                 actFFLen++;
+                /* Add predecessor's chain to the chain */
+                if (XCHAIN && (value1[predecessor] != value2[predecessor])) { 
+                    for (int j = 0; j <= predecessor; j++) {
+                        xchain[gateN][j] |= xchain[predecessor][j];
+                    }
+                }
                 break;
             case T_xnor:
                 invert = true;
@@ -827,28 +845,39 @@ void gateLevelCkt::goodsim() {
                 val1 = 0;
                 val2 = 0;
 
-                for(i=0;i<fanin[gateN];i++) {
+                for (int i = 0;i < fanin[gateN]; i++) {
                     predecessor = predList[i];
-                    if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
+                    /* Add predecessor's chain to the chain */
+                    if (XCHAIN && (value1[predecessor] != value2[predecessor])) {
+                        for (int j = 0; j <= predecessor; j++) {
+                            xchain[gateN][j] |= xchain[predecessor][j];
+                        }
+                    }
+                    if (newX) { /* Xs are combined, only a controlling value can change this now */
+                        continue;
+                    } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
                         val2 = ALLONES;
-                        break;
+                        newX = true;
                     } else {
-                        // tmpVal = ALLONES^(((    ALLONES^value1[predecessor]) &
-                        //         (ALLONES^val1)) | (value2[predecessor]&val2));
-                        // val2 = ((ALLONES^value1[predecessor]) & val2) |
-                        //         (value2[predecessor] & (ALLONES^val1));
-                        // val1 = tmpVal;
                         val1 ^= value1[predecessor];
                         val2 ^= value2[predecessor];
                         numXs += xlevel[predecessor] ? 1 : 0;
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                if (invert && (temp_xlevel != xlevelMAX)) {
+                if (invert && !newX) {
                     val1 = ~val1;
                     val2 = ~val2;
+                    if (XCHAIN) {
+                        /* set new X value */
+                        xchain[gateN][temp_xlevel] |= X_CHAIN_OFF;
+                    }
+                }
+                /* add new X value */
+                if (XCHAIN && newX) { 
+                    xchain[gateN][temp_xlevel] |= X_CHAIN_ON;
                 }
                 break;
             case T_output:
@@ -856,12 +885,23 @@ void gateLevelCkt::goodsim() {
                 val1 = value1[predecessor];
                 val2 = value2[predecessor];
                 temp_xlevel = xlevel[predecessor];
+                /* Add predecessor's chain to the chain */
+                if (XCHAIN && (value1[predecessor] != value2[predecessor])) {
+                    for (int j = 0; j <= predecessor; j++) {
+                        xchain[gateN][j] |= xchain[predecessor][j];
+                    }
+                }
                 break;
             case T_input:
             case T_tie0:
             case T_tie1:
             case T_tieX:
+                newX = true;
                 temp_xlevel = ++xlevelMAX;
+                /* add new X value */
+                if (XCHAIN && newX) {
+                    xchain[gateN][temp_xlevel] |= X_CHAIN_ON;
+                }
             case T_tieZ:
                 val1 = value1[gateN];
                 val2 = value2[gateN];
@@ -885,7 +925,7 @@ void gateLevelCkt::goodsim() {
             if ((val1 != value1[gateN]) || (val2 != value2[gateN]) || (val1 != val2)) {
                 value1[gateN] = val1;
                 value2[gateN] = val2;
-                for (i=0; i<fanout[gateN]; i++) {
+                for (int i = 0; i < fanout[gateN]; i++) {
                     successor = fnlist[gateN][i];
                     sucLevel = levelNum[successor];
                     if (sched[successor] == 0) {
@@ -902,7 +942,7 @@ void gateLevelCkt::goodsim() {
         }   // if (gateN...)
     }   // while (currLevel...)
     // now re-insert the activation list for the FF's
-    for (i=0; i < actLen; i++) {
+    for (int i = 0; i < actLen; i++) {
         insertEvent(0, activation[i]);
         sched[activation[i]] = 0;
         predecessor = inlist[activation[i]][0];
@@ -923,10 +963,8 @@ void gateLevelCkt::goodsim() {
 ////////////////////////////////////////////////////////////////////////
 
 void gateLevelCkt::observeOutputs() {
-    int i;
-
     cout << "\t";
-    for (i=0; i<numout; i++) {
+    for (int i = 0; i < numout; i++) {
         if (value1[outputs[i]] && value2[outputs[i]]) {
             cout << "1";
         } else if ((value1[outputs[i]] == 0) && (value2[outputs[i]] == 0)) {
@@ -937,7 +975,7 @@ void gateLevelCkt::observeOutputs() {
     }
 
     cout << "\n";
-    for (i=0; i<numff; i++) {
+    for (int i = 0; i < numff; i++) {
         if (value1[ff_list[i]] && value2[ff_list[i]]) {
             cout << "1";
         }
