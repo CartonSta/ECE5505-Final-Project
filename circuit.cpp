@@ -230,11 +230,6 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                     cout << "cmd: ";
                     cin >> cmd;
                     switch (cmd) {
-                        case 'x':
-                        case 'X':
-                            cin >> temp;
-                            circuit->printXTree(temp);
-                            continue;
                         case 's':
                         case 'S':
                             cin >> skipnum;
@@ -245,15 +240,26 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                             quit = true;
                             skip = true;
                             continue;
+                        case 'x':
+                        case 'X':
+                            if (XTREE) {
+                                cin >> temp;
+                                circuit->printXTree(temp);
+                                continue;
+                            } else {
+                                cout << "-x option must be enabled to use this command\n";
+                            }
                         default:
-                            cout << "Invalid command\n";
+                            cout << "Invalid command: " << cmd << endl;
                         case 'h':
                         case 'H':
                             cout << "List of commands is as follows:\n";
-                            cout << "h - help\n";
-                            cout << "s# - skip this and # following vectors (s0 to just skip this one)\n";
-                            cout << "q - quit\n";
-                            cout << "x# - view X tree for gate #\n";
+                            cout << "\th - help\n";
+                            cout << "\ts# - skip this and # following vectors (s0 to just skip this one)\n";
+                            cout << "\tq - quit\n";
+                            if (XTREE) {
+                                cout << "\tx# - view X tree for gate #\n";
+                            }
                             continue;
                     }
                 }
@@ -307,8 +313,9 @@ main(int argc, char *argv[]) {
             default:
                 cerr << "Invalid option: " << argv[1] << "\n";
                 cerr << "Usage: " << argv[0] << " [-xio] <ckt>\n";
-                cerr << "The -x option is to view the X chain for each X output.\n";
-                cerr << "The -i option enables interactive mode, where the user can flip gate values\n";
+                cerr << "The -x option is to view the X trees for each output.\n";
+                cerr << "The -i option enables interactive mode\n";
+                cerr << "With both -x and -i enabled the user can see X trees at any gate\n";
                 cerr << "and -o option is to OBSERVE fault-free outputs.\n";
                 exit(-1);
                 break;
