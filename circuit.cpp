@@ -216,6 +216,7 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
             }
             if (INTERACT && !quit) {
                 char cmd;
+                int temp;
                 bool skip = false;
                 if (skipnum >= 1) {
                     skip = true;
@@ -226,8 +227,14 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                     cout << "Enter a command or h for help\n";
                 }
                 while (!skip) {
+                    cout << "cmd: ";
                     cin >> cmd;
                     switch (cmd) {
+                        case 'x':
+                        case 'X':
+                            cin >> temp;
+                            circuit->printXTree(temp);
+                            continue;
                         case 's':
                         case 'S':
                             cin >> skipnum;
@@ -246,7 +253,8 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                             cout << "h - help\n";
                             cout << "s# - skip this and # following vectors (s0 to just skip this one)\n";
                             cout << "q - quit\n";
-                            break;
+                            cout << "x# - view X tree for gate #\n";
+                            continue;
                     }
                 }
             }
@@ -1021,12 +1029,16 @@ void gateLevelCkt::observeXTrees() {
 //  This function prints the X trees of the provided gate
 ////////////////////////////////////////////////////////////////////////
 void gateLevelCkt::printXTree(int gate) {
-    for (int i = 0; i < numgates; i++) {
-        if (xtree[gate][i] & X_TREE_ON) {
-            cout << "\tX" << i << "\tat gate " << xOnList[i] << endl;
-        }
-        if (xtree[gate][i] & X_TREE_OFF) {
-            cout << "\tX!" << i << "\tat gate " << xOffList[i] << endl;
+    if (gate > numgates || gate < 1) {
+        cout << "Invalid gate\n";
+    } else {
+        for (int i = 0; i < numgates; i++) {
+            if (xtree[gate][i] & X_TREE_ON) {
+                cout << "\tX" << i << "\tat gate " << xOnList[i] << endl;
+            }
+            if (xtree[gate][i] & X_TREE_OFF) {
+                cout << "\tX!" << i << "\tat gate " << xOffList[i] << endl;
+            }
         }
     }
 }
