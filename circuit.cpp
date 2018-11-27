@@ -89,6 +89,11 @@ enum {
 // gateLevelCkt class
 ////////////////////////////////////////////////////////////////////////
 
+/* Values xtree variable can have */
+#define X_TREE_NA  0x0
+#define X_TREE_ON  0x1
+#define X_TREE_OFF 0x2
+
 class gateLevelCkt {
     // circuit information
     int numgates;   // total number of gates (faulty included)
@@ -143,7 +148,7 @@ public:
     void setupWheel(int, int);
     void insertEvent(int, int);
     int retrieveEvent();
-    void setValue(int gate, char value); // change a value on a gate and add successors to event wheel
+    int setValue(int gate, char value); // change a value on a gate and add successors to event wheel
     void goodsim();     // logic sim (no faults inserted)
 
     void setTieEvents();    // inject events from tied nodes
@@ -217,7 +222,7 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
             }
             if (INTERACT && !quit) {
                 char cmd, val;
-                int temp;
+                int temp, retval;
                 bool skip = false;
                 if (skipnum >= 1) {
                     skip = true;
@@ -246,16 +251,24 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                                     case '1':
                                     case '0':
                                         /* Set the value here */
-                                        circuit->setValue(temp, val);
-                                        /* Schedule successors */
-                                        circuit->goodsim();
-                                        if (OBSERVE) {
-                                            cout << "\nNew output:\n";
-                                            circuit->observeOutputs();
-                                        }
-                                        if (XTREE) {
-                                            cout << "\nNew XTrees:\n";
-                                            circuit->observeXTrees();
+                                        retval = circuit->setValue(temp, val);
+                                        if (retval > 0) {
+                                            cout << "Set gate #" << temp << " to " << val << endl;
+                                            /* Schedule successors */
+                                            circuit->goodsim();
+
+                                            if (OBSERVE) {
+                                                cout << "New output:\n";
+                                                circuit->observeOutputs();
+                                            }
+                                            if (XTREE) {
+                                                cout << "New XTrees:\n";
+                                                circuit->observeXTrees();
+                                            }
+                                        } else if (retval == 0) {
+                                            cout << "Gate value did not change\n";
+                                        } else {
+                                            cout << "Invalid gate\n";
                                         }
                                         continue;
                                     case 'q':
@@ -266,6 +279,20 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                                         continue;
                                 }
                             }
+                            continue;
+                        case 'r':
+                        case 'R':
+                            cout << "Applying vector #" << vecNum << endl;
+                            circuit->applyVector(vector);
+                            circuit->goodsim();
+                            if (OBSERVE) {
+                                cout << "Output:\n";
+                                circuit->observeOutputs();
+                            }
+                            if (XTREE) {
+                                cout << "XTrees:\n";
+                                circuit->observeXTrees();
+                            } 
                             continue;
                         case 's':
                         case 'S':
@@ -293,6 +320,7 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                             cout << "List of commands is as follows:\n";
                             cout << "\th - help\n";
                             cout << "\tq - quit\n";
+                            cout << "\tr - reset the circuit to the original applied vector\n";
                             cout << "\ts# - skip this and # following vectors (s0 to just skip this one)\n";
                             cout << "\tg# - set gate #'s value\n";
                             if (XTREE) {
@@ -397,15 +425,15 @@ main(int argc, char *argv[]) {
 inline void gateLevelCkt::insertEvent(int levelN, int gateN) {
     levelEvents[levelN][levelLen[levelN]] = gateN;
     levelLen[levelN]++;
+    /* reset the xtree for the gate */
+    if (XTREE) {
+        memset(xtree[gateN], X_TREE_NA, sizeof(*xtree[gateN]) * (numgates+64));
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
 // gateLevelCkt class
 ////////////////////////////////////////////////////////////////////////
-
-#define X_TREE_NA  0x0
-#define X_TREE_ON  0x1
-#define X_TREE_OFF 0x2
 
 // constructor: reads in the *.lev file for the gate-level ckt
 gateLevelCkt::gateLevelCkt(string cktName) {
@@ -694,12 +722,17 @@ void gateLevelCkt::setTieEvents() {
 
 ////////////////////////////////////////////////////////////////////////
 // setValue()
-//  This function sets the value of a gate, changing and adding to the event wheel if necessary
+//  This function sets the value of a gate, adding to the event wheel if necessary
+//  The return value is 1 if the gate changes value, 0 if not, -1 if invalid gate
 ////////////////////////////////////////////////////////////////////////
-void gateLevelCkt::setValue(int gate, char value) {
+int gateLevelCkt::setValue(int gate, char value) {
     unsigned int origVal1, origVal2;
     char origBit;
     int successor;
+
+    if (gate > numgates) {
+        return -1;
+    }
 
     origVal1 = value1[gate] & 1;
     origVal2 = value2[gate] & 1;
@@ -710,9 +743,10 @@ void gateLevelCkt::setValue(int gate, char value) {
     } else {
         origBit = 'x';
     }
-    if (origBit == value) {
-        return;
-    } else {
+    if (origBit == value && origBit != 'x') {
+        return 0;
+    } else if (origBit != 'x') {
+        memset(xtree[gate], X_TREE_NA, sizeof(*xtree[gate]) * (numgates+64));
         switch (value) {
             case '0':
                 value1[gate] = 0;
@@ -738,14 +772,17 @@ void gateLevelCkt::setValue(int gate, char value) {
                 cerr << value << ": error value passed to setValue.\n";
                 exit(-1);
         }
-        for (int i = 0; i < fanout[gate]; i++) {
-            successor = fnlist[gate][i];
-            if (sched[successor] == 0) {
-                insertEvent(levelNum[successor], successor);
-                sched[successor] = 1;
-            }
+    } else {
+        cout << "The old value was X, the new value is too, so I'll just propagate it for you...\n";
+    }
+    for (int i = 0; i < fanout[gate]; i++) {
+        successor = fnlist[gate][i];
+        if (sched[successor] == 0) {
+            insertEvent(levelNum[successor], successor);
+            sched[successor] = 1;
         }
     }
+    return 1;
 }
 
 
@@ -760,12 +797,10 @@ void gateLevelCkt::applyVector(char *vec) {
     int successor;
     xlevelMAX = 0;
 
+    /* reset the on and offlist */
     if (XTREE) {
         memset(xOnList, 0, sizeof(*xOnList) * (numgates+64));
         memset(xOffList, 0, sizeof(*xOffList) * (numgates+64));
-        for (int i = 0; i < numgates + 64; i++) {
-            memset(xtree[i], X_TREE_NA, sizeof(*xtree[i]) * (numgates+64));
-        }
     }
 
     for (int i = 0; i < numpri; i++) {
