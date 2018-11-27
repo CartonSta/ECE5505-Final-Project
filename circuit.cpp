@@ -160,7 +160,7 @@ public:
 
 char vector[5120];
 gateLevelCkt *circuit;
-int OBSERVE, XTREE;
+int OBSERVE, XTREE, INTERACT;
 int vecNum=0;
 int numTieNodes;
 int TIES[512];
@@ -254,10 +254,14 @@ main(int argc, char *argv[]) {
             case 'x':
                 XTREE = 1;
                 break;
+            case 'i':
+                INTERACT = 1;
+                break;
             default:
                 cerr << "Invalid option: " << argv[1] << "\n";
                 cerr << "Usage: " << argv[0] << " [-xo] <ckt>\n";
                 cerr << "The -x option is to view the X chain for each X output.\n";
+                cerr << "The -i option enables interactive mode, where the user can flip gate values\n";
                 cerr << "and -o option is to OBSERVE fault-free outputs.\n";
                 exit(-1);
                 break;
@@ -268,6 +272,7 @@ main(int argc, char *argv[]) {
         nameIndex = 1;
         OBSERVE = 0;
         XTREE = 0;
+        INTERACT = 0;
     }
 
     cktName = argv[nameIndex];
@@ -754,17 +759,6 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                // if (invert && !newX) {
-                //     val1 = ~val1;
-                //     val2 = ~val2;
-                //     if (XTREE && (val1 != val2)) {
-                //         /* set new X value */
-                //         xtree[gateN][temp_xlevel] |= (val1 == 0) ? X_TREE_ON : X_TREE_OFF;
-                //     }
-                // }
-                // if (XTREE && newX) { /* add new X value */
-                //     xtree[gateN][temp_xlevel] |= X_TREE_ON;
-                // }
                 break;
             case T_nor:
                 invert = true;
@@ -797,22 +791,12 @@ void gateLevelCkt::goodsim() {
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
                     }
                 }
-                // if (invert && !newX) {
-                //     val1 = ~val1;
-                //     val2 = ~val2;
-                //     if (XTREE && (val1 != val2)) {
-                //         /* set new X value */
-                //         xtree[gateN][temp_xlevel] |= (val1 == 0) ? X_TREE_ON : X_TREE_OFF;
-                //     }
-                // }
-                // if (XTREE && newX) { /* add new X value */
-                //     xtree[gateN][temp_xlevel] |= X_TREE_ON;
-                // }
                 break;
             case T_not:
                 invert = true;
             case T_buf:
             case T_dff:
+            case T_output:
                 predecessor = inlist[gateN][0];
                 val1 = value1[predecessor];
                 val2 = value2[predecessor];
@@ -855,18 +839,6 @@ void gateLevelCkt::goodsim() {
                         val2 ^= value2[predecessor];
                         numXs += xlevel[predecessor] ? 1 : 0;
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
-                    }
-                }
-                break;
-            case T_output:
-                predecessor = inlist[gateN][0];
-                val1 = value1[predecessor];
-                val2 = value2[predecessor];
-                temp_xlevel = xlevel[predecessor];
-                /* Add predecessor's chain to the chain */
-                if (XTREE && (val1 != val2)) {
-                    for (int j = 0; j <= predecessor; j++) {
-                        xtree[gateN][j] |= xtree[predecessor][j];
                     }
                 }
                 break;
