@@ -729,6 +729,7 @@ int gateLevelCkt::setValue(int gate, char value) {
     unsigned int origVal1, origVal2;
     char origBit;
     int successor;
+    int count = 0;
 
     if (gate > numgates) {
         return -1;
@@ -745,8 +746,12 @@ int gateLevelCkt::setValue(int gate, char value) {
     }
     if (origBit == value && origBit != 'x') {
         return 0;
-    } else if (origBit != 'x') {
-        memset(xtree[gate], X_TREE_NA, sizeof(*xtree[gate]) * (numgates+64));
+    } else if (origBit == 'x' && value == 'x') {
+        cout << "The old value was X, the new value is too, so I'll just propagate it for you...\n";
+    } else {
+        if (XTREE) {
+            memset(xtree[gate], X_TREE_NA, sizeof(*xtree[gate]) * (numgates+64));
+        }
         switch (value) {
             case '0':
                 value1[gate] = 0;
@@ -772,8 +777,6 @@ int gateLevelCkt::setValue(int gate, char value) {
                 cerr << value << ": error value passed to setValue.\n";
                 exit(-1);
         }
-    } else {
-        cout << "The old value was X, the new value is too, so I'll just propagate it for you...\n";
     }
     for (int i = 0; i < fanout[gate]; i++) {
         successor = fnlist[gate][i];
