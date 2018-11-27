@@ -212,6 +212,27 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
             if (XTREE) {
                 circuit->observeXTrees();
             }
+            if (INTERACT) {
+                char cmd;
+                bool noexit = true;
+                cout << "Entering interactive mode for vector #" << vecNum << endl;
+                cout << "Enter a command or h for help\n";
+                while (noexit) {
+                    cin >> cmd;
+                    switch (cmd) {
+                        case 'e':
+                            noexit = false;
+                            continue;
+                        default:
+                            cout << "Invalid command\n";
+                        case 'h':
+                            cout << "List of commands is as follows:\n";
+                            cout << "h - help\n";
+                            cout << "e - exit\n";
+                            break;
+                    }
+                }
+            }
             vecNum++;
         }  // if (moreVec == 1)
     }   // while (getVector...)
@@ -232,9 +253,10 @@ main(int argc, char *argv[]) {
     start = clock();
 
     if ((argc != 2) && (argc != 3)) {
-        cerr << "Usage: " << argv[0] << "[-io] <ckt>\n";
-        cerr << "The -i option is to begin the circuit in a state in *.initState.\n";
-        cerr << "and -o option is to OBSERVE fault-free outputs and FF's.\n";
+        cerr << "Usage: " << argv[0] << "[-xio] <ckt>\n";
+        cerr << "The -x option is to view the X chain for each X output.\n";
+        cerr << "The -i option enables interactive mode, where the user can flip gate values\n";
+        cerr << "and -o option is to OBSERVE fault-free outputs.\n";
         cerr << " Example: " << argv[0] << " s27\n";
         cerr << " Example2: " << argv[0] << " -o s27\n";
         cerr << " Example3: " << argv[0] << " -io s27\n";
@@ -259,7 +281,7 @@ main(int argc, char *argv[]) {
                 break;
             default:
                 cerr << "Invalid option: " << argv[1] << "\n";
-                cerr << "Usage: " << argv[0] << " [-xo] <ckt>\n";
+                cerr << "Usage: " << argv[0] << " [-xio] <ckt>\n";
                 cerr << "The -x option is to view the X chain for each X output.\n";
                 cerr << "The -i option enables interactive mode, where the user can flip gate values\n";
                 cerr << "and -o option is to OBSERVE fault-free outputs.\n";
