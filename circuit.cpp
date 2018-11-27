@@ -198,9 +198,11 @@ int getVector(ifstream &inFile, int vecSize) {
 // logicSimFromFile() - logic simulates all vectors in vecFile on the circuit
 int logicSimFromFile(ifstream &vecFile, int vecWidth) {
     int moreVec;
+    int skipnum = 0;
+    bool quit = false;
 
     moreVec = 1;
-    while (moreVec) {
+    while (moreVec && !quit) {
         moreVec = getVector(vecFile, vecWidth);
         if (moreVec == 1) {
             cout << "vector #" << vecNum << ":\n";
@@ -212,23 +214,38 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
             if (XTREE) {
                 circuit->observeXTrees();
             }
-            if (INTERACT) {
+            if (INTERACT && !quit) {
                 char cmd;
-                bool noexit = true;
-                cout << "Entering interactive mode for vector #" << vecNum << endl;
-                cout << "Enter a command or h for help\n";
-                while (noexit) {
+                bool skip = false;
+                if (skipnum >= 1) {
+                    skip = true;
+                    skipnum--;
+                    cout << "Skipping interactive mode for vector #" << vecNum << endl;
+                } else {
+                    cout << "Entering interactive mode for vector #" << vecNum << endl;
+                    cout << "Enter a command or h for help\n";
+                }
+                while (!skip) {
                     cin >> cmd;
                     switch (cmd) {
-                        case 'e':
-                            noexit = false;
+                        case 's':
+                        case 'S':
+                            cin >> skipnum;
+                            skip = true;
+                            continue;
+                        case 'q':
+                        case 'Q':
+                            quit = true;
+                            skip = true;
                             continue;
                         default:
                             cout << "Invalid command\n";
                         case 'h':
+                        case 'H':
                             cout << "List of commands is as follows:\n";
                             cout << "h - help\n";
-                            cout << "e - exit\n";
+                            cout << "s# - skip this and # following vectors (s0 to just skip this one)\n";
+                            cout << "q - quit\n";
                             break;
                     }
                 }
@@ -991,7 +1008,7 @@ void gateLevelCkt::observeOutputs() {
 void gateLevelCkt::observeXTrees() {
     for (int i = 0; i < numout; i++) {
         if (value1[outputs[i]] != value2[outputs[i]]) {
-            cout << "\nGate " << outputs[i] << "'s XTree:\n";
+            cout << "Gate " << outputs[i] << "'s XTree:\n";
             printXTree(outputs[i]);
         }
     }
