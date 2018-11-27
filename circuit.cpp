@@ -143,6 +143,7 @@ public:
     void setupWheel(int, int);
     void insertEvent(int, int);
     int retrieveEvent();
+    void setValue(int gate, char value); // change a value on a gate and add successors to event wheel
     void goodsim();     // logic sim (no faults inserted)
 
     void setTieEvents();    // inject events from tied nodes
@@ -215,7 +216,7 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                 circuit->observeXTrees();
             }
             if (INTERACT && !quit) {
-                char cmd;
+                char cmd, val;
                 int temp;
                 bool skip = false;
                 if (skipnum >= 1) {
@@ -227,9 +228,45 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                     cout << "Enter a command or h for help\n";
                 }
                 while (!skip) {
+                    bool validVal = false;
                     cout << "cmd: ";
                     cin >> cmd;
                     switch (cmd) {
+                        case 'g':
+                        case 'G':
+                            cin >> temp;
+                            while (!validVal) {
+                                cout << "What would you like to set gate #" << temp << " to? (1,0,X): ";
+                                cin >> val;
+                                validVal = true;
+                                switch (val) {
+                                    case 'X':
+                                        val = 'x';
+                                    case 'x':
+                                    case '1':
+                                    case '0':
+                                        /* Set the value here */
+                                        circuit->setValue(temp, val);
+                                        /* Schedule successors */
+                                        circuit->goodsim();
+                                        if (OBSERVE) {
+                                            cout << "\nNew output:\n";
+                                            circuit->observeOutputs();
+                                        }
+                                        if (XTREE) {
+                                            cout << "\nNew XTrees:\n";
+                                            circuit->observeXTrees();
+                                        }
+                                        continue;
+                                    case 'q':
+                                    case 'Q':
+                                        continue;
+                                    default:
+                                        validVal = false;
+                                        continue;
+                                }
+                            }
+                            continue;
                         case 's':
                         case 'S':
                             cin >> skipnum;
@@ -255,8 +292,9 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                         case 'H':
                             cout << "List of commands is as follows:\n";
                             cout << "\th - help\n";
-                            cout << "\ts# - skip this and # following vectors (s0 to just skip this one)\n";
                             cout << "\tq - quit\n";
+                            cout << "\ts# - skip this and # following vectors (s0 to just skip this one)\n";
+                            cout << "\tg# - set gate #'s value\n";
                             if (XTREE) {
                                 cout << "\tx# - view X tree for gate #\n";
                             }
@@ -373,7 +411,7 @@ inline void gateLevelCkt::insertEvent(int levelN, int gateN) {
 gateLevelCkt::gateLevelCkt(string cktName) {
     ifstream yyin;
     string fName;
-    int i, j, count;
+    int count;
     char c;
     int netnum, junk;
     int f1, f2, f3;
@@ -388,7 +426,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
 
     numpri = numgates = numout = maxlevels = numff = 0;
     maxLevelSize = 32;
-    for (i=0; i<MAXlevels; i++) {
+    for (int i = 0; i < MAXlevels; i++) {
         levelSize[i] = 0;
     }
 
@@ -411,7 +449,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
 
     // now read in the circuit
     numTieNodes = 0;
-    for (i=1; i<count; i++) {
+    for (int i = 1; i < count; i++) {
         yyin >> netnum;
         yyin >> f1;
         yyin >> f2;
@@ -453,12 +491,12 @@ gateLevelCkt::gateLevelCkt(string cktName) {
 
         // now read in the faninlist
         inlist[netnum] = new int[fanin[netnum]];
-        for (j=0; j<fanin[netnum]; j++) {
+        for (int j = 0; j < fanin[netnum]; j++) {
             yyin >> f1;
             inlist[netnum][j] = (int) f1;
         }
 
-        for (j=0; j<fanin[netnum]; j++) {   // followed by close to samethings
+        for (int j = 0; j < fanin[netnum]; j++) {   // followed by close to samethings
             yyin >> junk;
         }
 
@@ -479,7 +517,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
         }
 
         fnlist[netnum] = new int[fanout[netnum]];
-        for (j=0; j<fanout[netnum]; j++) {
+        for (int j = 0; j < fanout[netnum]; j++) {
             yyin >> f1;
             fnlist[netnum][j] = (int) f1;
         }
@@ -523,14 +561,14 @@ gateLevelCkt::gateLevelCkt(string cktName) {
     numFaultFreeGates = numgates;
 
     // now compute the maximum width of the level
-    for (i=0; i<maxlevels; i++) {
+    for (int i = 0; i < maxlevels; i++) {
         if (levelSize[i] > maxLevelSize) {
             maxLevelSize = levelSize[i] + 1;
         }
     }
 
     // allocate space for the faulty gates
-    for (i = numgates; i < numgates+64; i+=2) {
+    for (int i = numgates; i < numgates + 64; i+=2) {
         inlist[i] = new int[2];
         fnlist[i] = new int[MAXFanout];
         po[i] = 0;
@@ -548,7 +586,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
     goodState = new char[numff];
     ffMap = new int[numgates];
     // get the ffMap
-    for (i=0; i<numff; i++) {
+    for (int i = 0; i < numff; i++) {
         ffMap[ff_list[i]] = i;
         goodState[i] = 'X';
     }
@@ -560,7 +598,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
         xtree = new short * [count+64];
         xOnList = new int[count+64];
         xOffList = new int[count+64];
-        for (i=0; i < numgates+64; i++) {
+        for (int i = 0; i < numgates + 64; i++) {
             xtree[i] = new short[numgates+64]();
         }
     }
@@ -573,7 +611,7 @@ gateLevelCkt::gateLevelCkt(string cktName) {
 ////////////////////////////////////////////////////////////////////////
 
 void gateLevelCkt::setFaninoutMatrix() {
-    int i, j, k;
+    int k;
     int predecessor, successor;
     int checked[MAXFanout];
     int checkID;    // needed for gates with fanouts to SAME gate
@@ -581,25 +619,25 @@ void gateLevelCkt::setFaninoutMatrix() {
 
     predOfSuccInput = new int *[numgates+64];
     succOfPredOutput = new int *[numgates+64];
-    for (i=0; i<MAXFanout; i++) {
+    for (int i = 0; i < MAXFanout; i++) {
         checked[i] = 0;
     }
     checkID = 1;
 
     prevSucc = -1;
-    for (i=1; i<numgates; i++) {
+    for (int i = 1; i < numgates; i++) {
         predOfSuccInput[i] = new int [fanout[i]];
         succOfPredOutput[i] = new int [fanin[i]];
 
-        for (j=0; j<fanout[i]; j++) {
+        for (int j = 0; j < fanout[i]; j++) {
             if (prevSucc != fnlist[i][j]) {
                 checkID++;
             }
             prevSucc = fnlist[i][j];
 
             successor = fnlist[i][j];
-            k=found=0;
-            while ((k<fanin[successor]) && (!found)) {
+            k = found = 0;
+            while ((k < fanin[successor]) && (!found)) {
                 if ((inlist[successor][k] == i) && (checked[k] != checkID)) {
                     predOfSuccInput[i][j] = k;
                     checked[k] = checkID;
@@ -609,15 +647,15 @@ void gateLevelCkt::setFaninoutMatrix() {
             }
         }
 
-        for (j=0; j<fanin[i]; j++) {
+        for (int j = 0; j < fanin[i]; j++) {
             if (prevSucc != inlist[i][j]) {
                 checkID++;
             }
             prevSucc = inlist[i][j];
 
             predecessor = inlist[i][j];
-            k=found=0;
-            while ((k<fanout[predecessor]) && (!found)) {
+            k = found = 0;
+            while ((k < fanout[predecessor]) && (!found)) {
                 if ((fnlist[predecessor][k] == i) && (checked[k] != checkID)) {
                     succOfPredOutput[i][j] = k;
                     checked[k] = checkID;
@@ -628,7 +666,7 @@ void gateLevelCkt::setFaninoutMatrix() {
         }
     }
 
-    for (i=numgates; i<numgates+64; i+=2) {
+    for (int i = numgates; i < numgates + 64; i+=2) {
         predOfSuccInput[i] = new int[MAXFanout];
         succOfPredOutput[i] = new int[MAXFanout];
     }
@@ -641,11 +679,10 @@ void gateLevelCkt::setFaninoutMatrix() {
 
 void gateLevelCkt::setTieEvents() {
     int predecessor, successor;
-    int i, j;
 
-    for (i = 0; i < numTieNodes; i++) {
+    for (int i = 0; i < numTieNodes; i++) {
         // different from previous time frame, place in wheel
-        for (j=0; j<fanout[TIES[i]]; j++) {
+        for (int j = 0; j < fanout[TIES[i]]; j++) {
             successor = fnlist[TIES[i]][j];
             if (sched[successor] == 0) {
                 insertEvent(levelNum[successor], successor);
@@ -656,6 +693,63 @@ void gateLevelCkt::setTieEvents() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+// setValue()
+//  This function sets the value of a gate, changing and adding to the event wheel if necessary
+////////////////////////////////////////////////////////////////////////
+void gateLevelCkt::setValue(int gate, char value) {
+    unsigned int origVal1, origVal2;
+    char origBit;
+    int successor;
+
+    origVal1 = value1[gate] & 1;
+    origVal2 = value2[gate] & 1;
+    if ((origVal1 == 1) && (origVal2 == 1)) {
+        origBit = '1';
+    } else if ((origVal1 == 0) && (origVal2 == 0)) {
+        origBit = '0';
+    } else {
+        origBit = 'x';
+    }
+    if (origBit == value) {
+        return;
+    } else {
+        switch (value) {
+            case '0':
+                value1[gate] = 0;
+                value2[gate] = 0;
+                xlevel[gate] = 0;
+                break;
+            case '1':
+                value1[gate] = ALLONES;
+                value2[gate] = ALLONES;
+                xlevel[gate] = 0;
+                break;
+            case 'x':
+            case 'X':
+                value1[gate] = 0;
+                value2[gate] = ALLONES;
+                xlevel[gate] = ++xlevelMAX;
+                if (XTREE) {
+                    xtree[gate][xlevelMAX] |= X_TREE_ON;
+                    xOnList[xlevelMAX] = gate;
+                }
+                break;
+            default:
+                cerr << value << ": error value passed to setValue.\n";
+                exit(-1);
+        }
+        for (int i = 0; i < fanout[gate]; i++) {
+            successor = fnlist[gate][i];
+            if (sched[successor] == 0) {
+                insertEvent(levelNum[successor], successor);
+                sched[successor] = 1;
+            }
+        }
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////
 // applyVector()
 //  This function applies the vector to the inputs of the ckt.
 ////////////////////////////////////////////////////////////////////////
@@ -664,18 +758,17 @@ void gateLevelCkt::applyVector(char *vec) {
     unsigned int origVal1, origVal2;
     char origBit;
     int successor;
-    int i, j;
     xlevelMAX = 0;
 
     if (XTREE) {
         memset(xOnList, 0, sizeof(*xOnList) * (numgates+64));
         memset(xOffList, 0, sizeof(*xOffList) * (numgates+64));
-        for (i=0; i < numgates+64; i++) {
+        for (int i = 0; i < numgates + 64; i++) {
             memset(xtree[i], X_TREE_NA, sizeof(*xtree[i]) * (numgates+64));
         }
     }
 
-    for (i = 0; i < numpri; i++) {
+    for (int i = 0; i < numpri; i++) {
         origVal1 = value1[inputs[i]] & 1;
         origVal2 = value2[inputs[i]] & 1;
         if ((origVal1 == 1) && (origVal2 == 1)) {
@@ -714,7 +807,7 @@ void gateLevelCkt::applyVector(char *vec) {
             } // switch
 
             // different from previous time frame, place in wheel
-            for (j=0; j<fanout[inputs[i]]; j++) {
+            for (int j = 0; j < fanout[inputs[i]]; j++) {
                 successor = fnlist[inputs[i]][j];
                 if (sched[successor] == 0) {
                     insertEvent(levelNum[successor], successor);
@@ -730,12 +823,10 @@ void gateLevelCkt::applyVector(char *vec) {
 ////////////////////////////////////////////////////////////////////////
 
 void gateLevelCkt::setupWheel(int numLevels, int levelSize) {
-    int i;
-
     numlevels = numLevels;
     levelLen = new int[numLevels];
     levelEvents = new int * [numLevels];
-    for (i=0; i < numLevels; i++) {
+    for (int i = 0; i < numLevels; i++) {
         levelEvents[i] = new int[levelSize];
         levelLen[i] = 0;
     }
