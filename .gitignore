@@ -30,7 +30,3 @@
 *.exe
 *.out
 *.app
-
-# The real program
-tests/
-final-project

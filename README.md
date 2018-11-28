@@ -1,15 +1,15 @@
-# ECE5505-Final-Project
-ECE 5505 Final Project
+# Circuit Simulation with Distinguishing Xs
+Simulator for testing circuits with multi input gates using distinguishing Xs
 
 To build: 
 	g++ or equivalent is needed.
 If GNU make is installed:
 	run make build or make O3 for optimized code
 If not:
-	run g++ circuit.cpp -o final-project
+	run g++ circuit.cpp -o circuit-simulator-burrow.app
 
 Usage:
-	./final-project [-iox] <ckt>
+	./circuit-simulator-burrow.app [-iox] <ckt>
 	-o is used to print the output of the circuit
 	-x is used to calculate the X Trees of the circuit and print them at the POs
 	-i is used to enable interactive mode, where gate values can be forced to a specific value to see how the circuit is impacted. 
@@ -26,6 +26,7 @@ Interactive mode commands:
 		note: setting a gate that is already set to x to x again will just propagate its current x value and X Tree (useful if you want to undo a change to a successor gate)
 	If -x enabled:
 	- x# - view the X Tree for gate #.
+	note: The interactive mode has not been written to handle bad inputs well, so entering invalid numbers for the appropriate commands may cause it to prematurely exit.
 
 How to interpret the output:
 

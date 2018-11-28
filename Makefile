@@ -1,6 +1,6 @@
 CC = g++
 SRC := circuit.cpp
-BIN = final-project
+BIN = circuit-simulator-burrow.app
 
 .PHONY: clean
 
