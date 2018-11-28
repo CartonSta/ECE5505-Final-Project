@@ -9,6 +9,8 @@ If not:
 	run g++ circuit.cpp -o circuit-simulator-burrow.app
 
 Usage:
+
+
 	./circuit-simulator-burrow.app [-iox] <ckt>
 	-o is used to print the output of the circuit
 	-x is used to calculate the X Trees of the circuit and print them at the POs
@@ -16,7 +18,9 @@ Usage:
 		- If -x is enabled as well, interactive mode allows the user to see the X Trees for a specific gate and how they change when a gate is changed
 		- Once in interactive mode type h for more help
 
+
 Interactive mode commands:
+	
 	- h - help
 	- q - quit (skips all remaining circuits and exits)
 	- r - reset the current circuit to the current applied vector
@@ -28,13 +32,17 @@ Interactive mode commands:
 	- x# - view the X Tree for gate #.
 	note: The interactive mode has not been written to handle bad inputs well, so entering invalid numbers for the appropriate commands may cause it to prematurely exit.
 
+
 How to interpret the output:
 
 The output using the -o option is the same as for previous projects, but this implementation allows for multi-input gates (>2) with distinguishing Xs.
+
 The X Trees mentioned above are a list of the distinguishing X's on the fanin of a given PO. They are displayed as follows:
-	X(!)#1 at gate #2, where the optional ! indicates an inversed X (e.g. X1 & X!1 == 0), #1 is the distinguishing X value, and #2 is the first gate at which that value occured.
+
+	X#1(!) at gate #2, where the optional ~ indicates an inversed X (e.g. X1 & X1! == 0), #1 is the distinguishing X value, and #2 is the first gate at which that value occured.
 		- note: In this implementation each distinguishing X is unique and can be set to X or X!, as opposed to some implementations where the positive Xs are the inverse of
 				their odd (#-1) counterparts.
+
 By using the -i and -x modes together, a user is able to not only view an X Tree for a given gate earlier in a fanin, but also to force a value on a specific gate and see how that affects the X Tree of its fanouts, i.e. if/how it propagates to the output.
 
 

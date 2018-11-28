@@ -1176,7 +1176,7 @@ void gateLevelCkt::printXTree(int gate) {
                 cout << "\tX" << i << "\tat gate " << xOnList[i] << endl;
             }
             if (xtree[gate][i] & X_TREE_OFF) {
-                cout << "\tX!" << i << "\tat gate " << xOffList[i] << endl;
+                cout << "\tX" << i << "!\tat gate " << xOffList[i] << endl;
             }
         }
     }
