@@ -923,7 +923,7 @@ void gateLevelCkt::goodsim() {
                 for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
                     if (XTREE && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
-                        for (int j = 0; j <= predecessor; j++) {
+                        for (int j = 0; j <= xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
                     }
@@ -955,7 +955,7 @@ void gateLevelCkt::goodsim() {
                 for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
                     if (XTREE && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
-                        for (int j = 0; j <= predecessor; j++) {
+                        for (int j = 0; j <= xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
                     }
@@ -990,7 +990,7 @@ void gateLevelCkt::goodsim() {
                 temp_xlevel = xlevel[predecessor];
                 /* Add predecessor's chain to the chain */
                 if (XTREE && (val1 != val2)) { 
-                    for (int j = 0; j <= predecessor; j++) {
+                    for (int j = 0; j <= xlevel[predecessor]; j++) {
                         xtree[gateN][j] |= xtree[predecessor][j];
                     }
                 }
@@ -1006,16 +1006,46 @@ void gateLevelCkt::goodsim() {
                 val1 = 0;
                 val2 = 0;
 
-                for (int i = 0;i < fanin[gateN]; i++) {
+                for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
                     /* Add predecessor's chain to the chain */
                     if (XTREE && (value1[predecessor] != value2[predecessor])) {
-                        for (int j = 0; j <= predecessor; j++) {
+                        for (int j = 0; j < xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
+                        xtree[gateN][xlevel[predecessor]] ^= xtree[predecessor][xlevel[predecessor]];
                     }
-                    if (newX) { /* Xs are combined, only a controlling value can change this now */
-                        continue;
+                    if (newX) { /* check if a new X canceled with an existing X */
+                        int check = 0;
+                        bool multiX = false;
+                        for (int j = 0; j <= i; j++) {
+                            if (xtree[gateN][xlevel[predList[j]]]) {
+                                /* if this isn't the first x predecessor existing */
+                                if (check) {
+                                    multiX = true;
+                                    break;
+                                } else {
+                                    check = predList[j];
+                                }
+                            }
+                        }
+                        /* only one X was found, other Xs were eliminated by a new predecessor */
+                        if (!multiX) {
+                            newX = false;
+                            if (check) {
+                                temp_xlevel = xlevel[check];
+                                xtree[gateN][xlevelMAX] = X_TREE_NA;
+                                numXs = 1;
+                                val1 = value1[check];
+                                val2 = value2[check];
+                            } else {
+                                temp_xlevel = 0;
+                                numXs = 0;
+                                val1 = 0;
+                                val2 = 0;
+                            }
+                            xlevelMAX--;              
+                        }
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
