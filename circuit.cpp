@@ -310,6 +310,7 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                         case 'X':
                             if (XTREE) {
                                 cin >> temp;
+                                cout << "X-Tree at gate " << temp << ":\n";
                                 circuit->printXTree(temp);
                                 continue;
                             } else {
@@ -1155,7 +1156,7 @@ void gateLevelCkt::observeOutputs() {
 void gateLevelCkt::observeXTrees() {
     for (int i = 0; i < numout; i++) {
         if (value1[outputs[i]] != value2[outputs[i]]) {
-            cout << "Gate " << outputs[i] << "'s XTree:\n";
+            cout << "Gate " << outputs[i] << "'s X-Tree:\n";
             printXTree(outputs[i]);
         }
     }
