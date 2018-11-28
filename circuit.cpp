@@ -297,6 +297,8 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                         case 's':
                         case 'S':
                             cin >> skipnum;
+                        case 'c':
+                        case 'C':
                             skip = true;
                             continue;
                         case 'q':
@@ -321,7 +323,8 @@ int logicSimFromFile(ifstream &vecFile, int vecWidth) {
                             cout << "\th - help\n";
                             cout << "\tq - quit\n";
                             cout << "\tr - reset the circuit to the original applied vector\n";
-                            cout << "\ts# - skip this and # following vectors (s0 to just skip this one)\n";
+                            cout << "\tc - continue to the next vector\n";
+                            cout << "\ts# - skip this and # following vectors (s0 is equivalent to c)\n";
                             cout << "\tg# - set gate #'s value\n";
                             if (XTREE) {
                                 cout << "\tx# - view X tree for gate #\n";
