@@ -1016,34 +1016,35 @@ void gateLevelCkt::goodsim() {
                         xtree[gateN][xlevel[predecessor]] ^= xtree[predecessor][xlevel[predecessor]];
                     }
                     if (newX) { /* check if a new X canceled with an existing X */
-                        int check = 0;
+                        int check = 0, parity = 0;
                         bool multiX = false;
                         for (int j = 0; j <= i; j++) {
                             if (xtree[gateN][xlevel[predList[j]]]) {
                                 /* if this isn't the first x predecessor existing */
                                 if (check) {
                                     multiX = true;
-                                    break;
-                                } else {
+                                } else { /* if this is the first, set check to it */
                                     check = predList[j];
                                 }
+                            } else if (value1[predList[j]] == ALLONES && value2[predList[j]] == ALLONES) {
+                                parity++;
                             }
                         }
                         /* only one X was found, other Xs were eliminated by a new predecessor */
+                        /* restore that value now */
                         if (!multiX) {
                             newX = false;
-                            if (check) {
-                                temp_xlevel = xlevel[check];
-                                xtree[gateN][xlevelMAX] = X_TREE_NA;
-                                numXs = 1;
-                                val1 = value1[check];
-                                val2 = value2[check];
-                            } else {
-                                temp_xlevel = 0;
-                                numXs = 0;
-                                val1 = 0;
-                                val2 = 0;
-                            }
+                            int inverse = xtree[gateN][check];
+                            temp_xlevel = xlevel[check];
+                            xtree[gateN][xlevelMAX] = X_TREE_NA;
+                            numXs = 1;
+
+                            val1 = (inverse & X_TREE_ON) ? ALLONES : 0;
+                            val2 = (inverse & X_TREE_OFF) ? ALLONES : 0;
+                            /* incorporate parity */
+
+                            val1 = (parity % 2) ? val1 ^ ALLONES : val1;
+                            val2 = (parity % 2) ? val2 ^ ALLONES : val2;
                             xlevelMAX--;              
                         }
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
