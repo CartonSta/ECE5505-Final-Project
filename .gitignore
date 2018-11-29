@@ -33,3 +33,6 @@
 
 # test file directory
 tests/
+
+# latex stuff
+*.synctex.gz

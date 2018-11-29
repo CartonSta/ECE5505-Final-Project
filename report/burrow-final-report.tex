@@ -1,0 +1,165 @@
+\documentclass[12pt]{report}
+
+\setlength{\textwidth}{6.5in}
+\setlength{\textheight}{8.5in}
+\setlength{\evensidemargin}{0in}
+\setlength{\oddsidemargin}{0in}
+\setlength{\topmargin}{0in}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.1in}
+
+% packages
+\usepackage{bookmark}
+\usepackage{acro}
+\usepackage{graphicx}
+\usepackage{listings}
+\graphicspath{ {images/} }
+\usepackage{upgreek}
+\usepackage{caption}
+\usepackage[nameinlink]{cleveref}
+\usepackage{setspace}
+\captionsetup[figure]{font=scriptsize, labelfont=bf}
+
+%Redefining chapter heads
+\makeatletter
+\def\@makechapterhead#1{%
+  %%%%\vspace*{50\p@}% %%% removed!
+  {\parindent \z@ \raggedright \normalfont
+    \ifnum \c@secnumdepth >\m@ne
+        \huge\bfseries \@chapapp\space \thechapter
+        \par\nobreak
+        \vskip 20\p@
+    \fi
+    \interlinepenalty\@M
+    \Huge \bfseries #1\par\nobreak
+    \vskip 40\p@
+  }}
+\def\@makeschapterhead#1{%
+  %%%%%\vspace*{50\p@}% %%% removed!
+  {\parindent \z@ \raggedright
+    \normalfont
+    \interlinepenalty\@M
+    \Huge \bfseries  #1\par\nobreak
+    \vskip 40\p@
+  }}
+\makeatother
+% end redefinition
+
+% listings stuff
+\renewcommand{\lstlistingname}{Algorithm}
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}
+\crefname{listing}{algorithm}{algorithms}
+\Crefname{listing}{Algorithm}{Algorithms}
+\lstset{
+  numbers=left,
+  stepnumber=5,    
+  firstnumber=1,
+  numberfirstline=true
+}
+% end listings stuff
+
+% Acronyms
+%\DeclareAcronym{io}{
+%	short = I/O,
+%	long = Input/Output,
+%	class = acron
+%}
+
+\newcommand{\textsub}{\textsubscript}
+\newcommand{\textsup}{\textsuperscript}
+\def \doctitle {Simulation of Multi-input gates with Distinguishing X’s and X-Trees}
+
+\begin{document}
+
+\thispagestyle{empty}
+\pagenumbering{roman}
+\begin{center}
+
+% TITLE
+\pdfbookmark{Title Page}{}
+{\Large 
+\doctitle
+}
+
+\vfill
+
+Ryan D. Burrow
+
+\vfill
+
+ECE 5505 Final Report
+
+\vfill
+
+\date{\today}
+
+\vfill
+
+Keywords: Testing and Verification, Logic Simulation, Distinguishing X's\\
+
+\end{center}
+
+\pagebreak
+
+% Navigation information
+
+\pdfbookmark{Table of Contents}{toc}
+\tableofcontents
+\pagebreak
+
+\pdfbookmark{List of Figures}{lof}
+\listoffigures
+
+\pdfbookmark{List of Tables}{lot}
+\listoftables
+
+\pdfbookmark{List of Algorithms}{loc}
+\lstlistoflistings
+\pagebreak
+
+\pdfbookmark{List of Acronyms}{loa}
+\printacronyms[include-classes=acron,name=List of Acronyms]
+\pagebreak
+
+\pagenumbering{arabic}
+\pagestyle{myheadings}
+
+% Content
+\doublespacing
+
+%reset acronyms, define them here
+\acresetall
+
+\chapter{Introduction} \label{introduction}
+\markright{Ryan D. Burrow \hfill Introduction \hfill}
+
+\chapter{Multi-input gates}
+
+\section{overview}
+
+\section{challenges}
+
+\section{interesting parts}
+
+% Unused citations
+
+
+\cite{efficient-error}
+\cite{multiple-defect}
+\cite{incremental}
+\cite{exclusive-test}
+\cite{modeling-unknown}
+
+
+\pdfbookmark{Bibliography}{bib}
+\bibliography{references} 
+\bibliographystyle{myIEEEtran}
+
+\appendix
+
+% In LaTeX, each appendix is a "chapter"
+% \chapter{Program Source}
+
+
+\end{document}
