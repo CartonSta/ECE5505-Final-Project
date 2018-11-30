@@ -932,6 +932,7 @@ void gateLevelCkt::goodsim() {
                                 val1 = val2 = 0;
                                 numXs = 2;
                                 newX = false;
+                                xlevelMAX--;
                                 break;
                             }
                         }
@@ -978,6 +979,7 @@ void gateLevelCkt::goodsim() {
                                 val1 = val2 = ALLONES;
                                 numXs = 2;
                                 newX = false;
+                                xlevelMAX--;
                                 break;
                             }
                         }
