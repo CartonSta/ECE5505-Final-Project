@@ -46,7 +46,7 @@ The X Trees mentioned above are a list of the distinguishing X's on the fanin of
 By using the -i and -x modes together, a user is able to not only view an X Tree for a given gate earlier in a fanin, but also to force a value on a specific gate and see how that affects the X Tree of its fanouts, i.e. if/how it propagates to the output.
 
 
-
+```
 .vec file format
 ----------------------------------------------------------------
 14                  /* number of lines */
@@ -99,3 +99,4 @@ T_bus_golow,    /* 19 */
 T_tristate,     /* 20 */
 T_tristateinv,  /* 21 */
 T_tristate1     /* 22 */
+```
