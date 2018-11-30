@@ -430,9 +430,7 @@ inline void gateLevelCkt::insertEvent(int levelN, int gateN) {
     levelEvents[levelN][levelLen[levelN]] = gateN;
     levelLen[levelN]++;
     /* reset the xtree for the gate */
-    if (XTREE) {
-        memset(xtree[gateN], X_TREE_NA, sizeof(*xtree[gateN]) * (numgates+64));
-    }
+    memset(xtree[gateN], X_TREE_NA, sizeof(*xtree[gateN]) * (numgates+64));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -626,13 +624,11 @@ gateLevelCkt::gateLevelCkt(string cktName) {
     setupWheel(maxlevels, maxLevelSize);
     setFaninoutMatrix();
 
-    if (XTREE) {
-        xtree = new short * [count+64];
-        xOnList = new int[count+64];
-        xOffList = new int[count+64];
-        for (int i = 0; i < numgates + 64; i++) {
-            xtree[i] = new short[numgates+64]();
-        }
+    xtree = new short * [count+64];
+    xOnList = new int[count+64];
+    xOffList = new int[count+64];
+    for (int i = 0; i < numgates + 64; i++) {
+        xtree[i] = new short[numgates+64]();
     }
 }
 
@@ -753,9 +749,7 @@ int gateLevelCkt::setValue(int gate, char value) {
     } else if (origBit == 'x' && value == 'x') {
         cout << "The old value was X, the new value is too, so I'll just propagate it for you...\n";
     } else {
-        if (XTREE) {
-            memset(xtree[gate], X_TREE_NA, sizeof(*xtree[gate]) * (numgates+64));
-        }
+        memset(xtree[gate], X_TREE_NA, sizeof(*xtree[gate]) * (numgates+64));
         switch (value) {
             case '0':
                 value1[gate] = 0;
@@ -772,8 +766,8 @@ int gateLevelCkt::setValue(int gate, char value) {
                 value1[gate] = 0;
                 value2[gate] = ALLONES;
                 xlevel[gate] = ++xlevelMAX;
+                xtree[gate][xlevelMAX] |= X_TREE_ON;
                 if (XTREE) {
-                    xtree[gate][xlevelMAX] |= X_TREE_ON;
                     xOnList[xlevelMAX] = gate;
                 }
                 break;
@@ -838,8 +832,8 @@ void gateLevelCkt::applyVector(char *vec) {
                 value1[inputs[i]] = 0;
                 value2[inputs[i]] = ALLONES;
                 xlevel[inputs[i]] = ++xlevelMAX;
+                xtree[inputs[i]][xlevelMAX] |= X_TREE_ON;
                 if (XTREE) {
-                    xtree[inputs[i]][xlevelMAX] |= X_TREE_ON;
                     xOnList[xlevelMAX] = inputs[i];
                 }
                 break;
@@ -922,7 +916,7 @@ void gateLevelCkt::goodsim() {
                 predList = inlist[gateN];
                 for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
-                    if (XTREE && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
+                    if ((value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
                         for (int j = 0; j <= xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
@@ -968,7 +962,7 @@ void gateLevelCkt::goodsim() {
                 predList = inlist[gateN];
                 for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
-                    if (XTREE && (value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
+                    if ((value1[predecessor] != value2[predecessor])) { /* Add predecessor's chain to the chain */
                         for (int j = 0; j <= xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
@@ -1017,7 +1011,7 @@ void gateLevelCkt::goodsim() {
                 val2 = value2[predecessor];
                 temp_xlevel = xlevel[predecessor];
                 /* Add predecessor's chain to the chain */
-                if (XTREE && (val1 != val2)) { 
+                if (val1 != val2) { 
                     for (int j = 0; j <= xlevel[predecessor]; j++) {
                         xtree[gateN][j] |= xtree[predecessor][j];
                     }
@@ -1037,7 +1031,7 @@ void gateLevelCkt::goodsim() {
                 for (int i = 0; i < fanin[gateN]; i++) {
                     predecessor = predList[i];
                     /* Add predecessor's chain to the chain */
-                    if (XTREE && (value1[predecessor] != value2[predecessor])) {
+                    if ((value1[predecessor] != value2[predecessor])) {
                         for (int j = 0; j < xlevel[predecessor]; j++) {
                             xtree[gateN][j] |= xtree[predecessor][j];
                         }
@@ -1120,22 +1114,24 @@ void gateLevelCkt::goodsim() {
             if (invert && !newX) {
                 val1 = ~val1;
                 val2 = ~val2;
-                if (XTREE && (val1 != val2)) {
+                if (val1 != val2) {
                     /* set new X value */
                     short temp = xtree[gateN][temp_xlevel];
                     xtree[gateN][temp_xlevel] |= (val1 == 0) ? X_TREE_ON : X_TREE_OFF;
-                    if (!(temp & X_TREE_OFF)) {
+                    if (XTREE && !(temp & X_TREE_OFF)) {
                         xOffList[temp_xlevel] = gateN;
                     }
-                    if (!(temp & X_TREE_ON)) {
+                    if (XTREE && !(temp & X_TREE_ON)) {
                         xOnList[temp_xlevel] = gateN;
                     }
                 }
             }
             /* add new X value */
-            if (XTREE && newX) { 
+            if (newX) { 
                 xtree[gateN][temp_xlevel] |= X_TREE_ON;
-                xOnList[temp_xlevel] = gateN;
+                if (XTREE) {
+                    xOnList[temp_xlevel] = gateN;
+                }
             }
 
             // if gate value changed or value is x
