@@ -202,20 +202,12 @@ XOR gates came with their own complications when converting to multi-input as op
 
 \section{Overview}
 
-The X-Tree was a structure that was created to help the user track how X values mixed and evolved through a circuit. It is simply an array for each gate with a value corresponding to each X value. X\_TREE\_NA (0) represents that the current X value is not in the history of X values for the current gate. X\_TREE\_ON (1) represents that the current X value is present in the history of the current gate. X\_TREE\_OFF (2) represents that the inverse of the current X value is in the history of the current gate. These values were chosen because X\_TREE\_ON and X\_TREE\_OFF are not mutually exclusive, and in an XOR gate or an OR gate would evaluate to 1, while in an AND gate would evaluate to zero.
+The X-Tree was a structure that was created to help the user track how X values mixed and evolved through a circuit. It is simply an array for each gate with a value corresponding to each X value. X\_TREE\_NA (0) represents that the current X value is not in the history of X values for the current gate. X\_TREE\_ON (1) represents that the current X value is present in the history of the current gate. X\_TREE\_OFF (2) represents that the inverse of the current X value is in the history of the current gate. These values were chosen because X\_TREE\_ON and X\_TREE\_OFF are not mutually exclusive, and in an XOR gate or an OR gate would evaluate to 1, while in an AND gate would evaluate to zero. An example of a circuit and its output from the program are given in \cref{fig:xtree-ckt,fig:sim-output}.
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.5\textwidth]{xtree-circuit.png}
-	\caption[X-Tree Circuit]{The circuit used in the example simulation}
-	\label{fig:xtree-ckt}
-\end{figure}
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.5\textwidth]{sim-output.png}
-	\caption[X-Tree Output]{An example of the X-Tree output of the simulator}
-	\label{fig:sim-output}
+	\subfloat[The circuit used in the example simulation]{\label{fig:xtree-ckt}\includegraphics[width=0.5\textwidth]{xtree-circuit.png}}
+	\subfloat[An example of the X-Tree output of the simulator]{\label{fig:sim-output}\includegraphics[width=0.5\textwidth]{sim-output.png}}	
 \end{figure}
 
 \section{Effects on Gates}\label{sec:xtree-effects}
@@ -234,16 +226,9 @@ The \ac{ui} was created with the intention of allowing a user to get a better un
 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.7\textwidth]{sim-xtree-cmd.png}
-	\caption[UI X-Tree Viewer]{An example of the user interface and how to observe the X-Tree of any gate in the circuit}
-	\label{fig:sim-xtree-cmd}
-\end{figure}
-
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.7\textwidth]{sim-gate-cmd.png}
-	\caption[UI Gate Controller]{An example of the user interface and how to force a value on the output of a gate}
-	\label{fig:sim-gate-cmd}
+	\subfloat[An example of the user interface and how to observe the X-Tree of any gate in the circuit]{\label{fig:sim-xtree-cmd}\includegraphics[width=0.4\textwidth]{sim-xtree-cmd.png}}
+	\qquad
+	\subfloat[An example of the user interface and how to force a value on the output of a gate]{\label{fig:sim-gate-cmd}\includegraphics[width=0.4\textwidth]{sim-gate-cmd.png}}	
 \end{figure}
 
 \pdfbookmark{Bibliography}{bib}
