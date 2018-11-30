@@ -19,6 +19,8 @@
 \usepackage{caption}
 \usepackage[nameinlink]{cleveref}
 \usepackage{setspace}
+%\usepackage{subcaption}
+\usepackage{subfig}
 \captionsetup[figure]{font=scriptsize, labelfont=bf}
 
 %Redefining chapter heads
@@ -111,12 +113,12 @@ Keywords: Testing and Verification, Logic Simulation, Distinguishing X's\\
 \pdfbookmark{List of Figures}{lof}
 \listoffigures
 
-\pdfbookmark{List of Tables}{lot}
-\listoftables
-
-\pdfbookmark{List of Algorithms}{loc}
-\lstlistoflistings
-\pagebreak
+%\pdfbookmark{List of Tables}{lot}
+%\listoftables
+%
+%\pdfbookmark{List of Algorithms}{loc}
+%\lstlistoflistings
+%\pagebreak
 
 \pdfbookmark{List of Acronyms}{loa}
 \printacronyms[include-classes=acron,name=List of Acronyms]
@@ -132,18 +134,12 @@ Keywords: Testing and Verification, Logic Simulation, Distinguishing X's\\
 \acresetall
 
 \chapter{Introduction} \label{introduction}
-\markright{Ryan D. Burrow \hfill Introduction \hfill}
 
-\chapter{Multi-input gates}
+\section{Overview}
 
-\section{overview}
+The goal of this project was to transform the previous project, which implemented a simulator of circuits containing distinguishing X’s, but only on dual input gates, for gates containing more than 2 inputs; the process of implementing this and the challenges of doing so will be discussed in \cref{sec:mig}. Another goal of this project was to implement some features that would help gain information from X values that were not squashed and were propagated to the output. The mechanism that was chosen to do this was named an X-Tree, and is a list of all the distinguishing X’s that make up an X value at any gate in the circuit. In addition, the first occurrence of each distinguishing X value and its inverse is tracked in two separate lists, to help identify key gates in the propagation path; this is covered in \cref{sec:xtree}. The final step to help obtain more information about these values was to implement an interface that would allow a user to interact with the circuit and inspect specific gates, as well as manipulate their output to see the effect on the circuit; this will be discussed more in \cref{sec:ui}.
 
-\section{challenges}
-
-\section{interesting parts}
-
-% Unused citations
-
+\section{Background Research}
 
 \cite{efficient-error}
 \cite{multiple-defect}
@@ -151,10 +147,107 @@ Keywords: Testing and Verification, Logic Simulation, Distinguishing X's\\
 \cite{exclusive-test}
 \cite{modeling-unknown}
 
+\chapter{Multi-input gates}
+\label{sec:mig}
+
+\section{Overview}
+
+\section{AND/OR}
+
+\cref{fig:and-ul}
+\cref{fig:xtree-ckt}
+
+\begin{figure}[h]	
+	\subfloat[]{\label{fig:and-ul}\includegraphics[width=0.5\textwidth]{3-input-and-ul.png}}
+	\subfloat[]{\label{fig:and-ur}\includegraphics[width=0.5\textwidth]{3-input-and-ur.png}}
+	\newline
+	\subfloat[]{\label{fig:and-ll}\includegraphics[width=0.5\textwidth]{3-input-and-ll.png}}
+	\subfloat[]{\label{fig:and-lr}\includegraphics[width=0.5\textwidth]{3-input-and-lr.png}}
+	\label{fig:and-group}
+	\caption[Multi-input AND Gates]{Various Multi-input AND Gate Configurations}
+\end{figure}
+
+\begin{figure}[h]	
+	\subfloat[]{\label{fig:or-ul}\includegraphics[width=0.5\textwidth]{3-input-or-ul.png}}
+	\subfloat[]{\label{fig:or-ur}\includegraphics[width=0.5\textwidth]{3-input-or-ur.png}}
+	\newline
+	\subfloat[]{\label{fig:or-ll}\includegraphics[width=0.5\textwidth]{3-input-or-ll.png}}
+	\subfloat[]{\label{fig:or-lr}\includegraphics[width=0.5\textwidth]{3-input-or-lr.png}}
+	\label{fig:or-group}
+	\caption[Multi-input OR Gates]{Various Multi-input OR Gate Configurations}
+\end{figure}
+
+\subsection{Controlling Values}
+
+\subsection{Major Changes}
+
+\section{XOR}
+
+\subsection{Order of Inputs}
+
+\begin{figure}[h]	
+	\subfloat[]{\label{fig:xor-ul}\includegraphics[width=0.5\textwidth]{3-input-xor-ul.png}}
+	\subfloat[]{\label{fig:xor-ur}\includegraphics[width=0.5\textwidth]{3-input-xor-ur.png}}
+	\newline
+	\subfloat[]{\label{fig:xor-ll}\includegraphics[width=0.5\textwidth]{3-input-xor-ll.png}}
+	\subfloat[]{\label{fig:xor-lr}\includegraphics[width=0.5\textwidth]{3-input-xor-lr.png}}
+	\label{fig:xor-group}
+	\caption[Multi-input XOR Gates]{Various Multi-input XOR Gate Configurations}
+\end{figure}
+
+\subsection{Restoring X's}
+
+\chapter{X-Trees}
+\label{sec:xtree}
+
+\section{Overview}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{xtree-circuit.png}
+	\caption[X-Tree Circuit]{The circuit used in the example simulation}
+	\label{fig:xtree-ckt}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{sim-output.png}
+	\caption[X-Tree Output]{An example of the X-Tree output of the simulator}
+	\label{fig:sim-output}
+\end{figure}
+
+\section{Effects on Gates}
+
+\subsection{AND/OR}
+
+\subsection{XOR}
+
+\chapter{User Interface}
+\label{sec:ui}
+
+\section{Overview}
+
+\section{X-Trees}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{sim-xtree-cmd.png}
+	\caption[UI X-Tree Viewer]{An example of the user interface and how to observe the X-Tree of any gate in the circuit}
+	\label{fig:sim-xtree-cmd}
+\end{figure}
+
+\section{Controlling Gates}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\textwidth]{sim-gate-cmd.png}
+	\caption[UI Gate Controller]{An example of the user interface and how to force a value on the output of a gate}
+	\label{fig:sim-gate-cmd}
+\end{figure}
 
 \pdfbookmark{Bibliography}{bib}
-\bibliography{references} 
 \bibliographystyle{myIEEEtran}
+\bibliography{references}
 
 \appendix
 
