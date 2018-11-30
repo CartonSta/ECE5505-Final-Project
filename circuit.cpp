@@ -932,8 +932,19 @@ void gateLevelCkt::goodsim() {
                         numXs = 0;
                         newX = false;
                         break;
-                    } else if (newX) { /* Xs are combined, only a controlling value can change this now */
-                        continue;
+                    } else if (newX) { /* check if a new X canceled with an existing X */
+                        for (int j = 0; j <= i; j++) {
+                            if (xtree[gateN][xlevel[predList[j]]] == (X_TREE_ON & X_TREE_OFF)) {
+                                val1 = val2 = 0;
+                                numXs = 2;
+                                newX = false;
+                                break;
+                            }
+                        }
+                        /* something canceled and the output is now forced */
+                        if (!newX) {
+                            break;
+                        }
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
@@ -944,6 +955,9 @@ void gateLevelCkt::goodsim() {
                         val2 &= value2[predecessor];
                         numXs += xlevel[predecessor] ? 1 : 0;
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
+                        if (val1 == 0 && val2 == 0) { /* value has been squashed */
+                            break;
+                        }
                     }
                 }
                 break;
@@ -964,8 +978,19 @@ void gateLevelCkt::goodsim() {
                         numXs = 0;
                         newX = false;
                         break;
-                    } else if (newX) { /* Xs are combined, only a controlling value can change this now */
-                        continue;
+                    } else if (newX) { /* check if a new X canceled with an existing X */
+                        for (int j = 0; j <= i; j++) {
+                            if (xtree[gateN][xlevel[predList[j]]] == (X_TREE_ON & X_TREE_OFF)) {
+                                val1 = val2 = ALLONES;
+                                numXs = 2;
+                                newX = false;
+                                break;
+                            }
+                        }
+                        /* something canceled and the output is now forced */
+                        if (!newX) {
+                            break;
+                        }
                     } else if (temp_xlevel && xlevel[predecessor] && (temp_xlevel != xlevel[predecessor])) {
                         temp_xlevel = ++xlevelMAX;
                         val1 = 0;
@@ -976,6 +1001,9 @@ void gateLevelCkt::goodsim() {
                         val2 |= value2[predecessor];
                         numXs += xlevel[predecessor] ? 1 : 0;
                         temp_xlevel = temp_xlevel ? temp_xlevel : xlevel[predecessor];
+                        if (val1 == ALLONES && val2 == ALLONES) { /* value has been squashed */
+                            break;
+                        }
                     }
                 }
                 break;
